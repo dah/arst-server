@@ -2,6 +2,8 @@ use axum::handler::Handler;
 use axum::http::StatusCode;
 use axum::response::Html;
 use axum::routing::get;
+use serde_json::{json, Value};
+use std::collections::HashMap;
 
 #[tokio::main]
 async fn main() {
@@ -11,7 +13,18 @@ async fn main() {
         .route("/demo-status", get(demo_status))
         .route("/hello.html", get(hello_html))
         .route("/demo-uri", get(demo_uri))
-        .route("/demo.png", get(get_demo_png));
+        .route("/demo.png", get(get_demo_png))
+        .route(
+            "/foo",
+            get(get_foo)
+                .put(put_foo)
+                .patch(patch_foo)
+                .post(post_foo)
+                .delete(delete_foo),
+        )
+        .route("/items/:id", get(get_items_id))
+        .route("/items", get(get_items))
+        .route("/demo.json", get(get_demo_json));
 
     axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
         .serve(app.into_make_service())
@@ -21,7 +34,7 @@ async fn main() {
 }
 
 async fn hello() -> String {
-    "hello cruel world!".into()
+    "hello interesting but cruel world!".into()
 }
 
 async fn hello_html() -> Html<&'static str> {
@@ -60,4 +73,30 @@ async fn get_demo_png() -> impl axum::response::IntoResponse {
         axum::response::AppendHeaders([(axum::http::header::CONTENT_TYPE, "image/png")]),
         base64::decode(png).unwrap(),
     )
+}
+async fn get_foo() -> String {
+    "GET foo".to_string()
+}
+async fn put_foo() -> String {
+    "PUT foo".to_string()
+}
+async fn patch_foo() -> String {
+    "PATCH foo".to_string()
+}
+async fn post_foo() -> String {
+    "POST foo".to_string()
+}
+async fn delete_foo() -> String {
+    "DELETE foo".to_string()
+}
+async fn get_items_id(axum::extract::Path(id): axum::extract::Path<String>) -> String {
+    format!("Get items with path id: {:?}", id)
+}
+async fn get_items(
+    axum::extract::Query(params): axum::extract::Query<HashMap<String, String>>,
+) -> String {
+    format!("Get items with query params: {:?}", params)
+}
+async fn get_demo_json() -> axum::extract::Json<Value> {
+    json!({"a":"b"}).into()
 }
